@@ -1,5 +1,11 @@
-import { PCRE, type PCRERegex } from '@syntropiq/libpcre-ts';
 import unidecode from 'unidecode';
+import { 
+  escapeRegex, 
+  substituteEdition, 
+  substituteEditions, 
+  getPCREPatternFromData,
+  convertNamedGroups
+} from '@syntropiq/xtrax/pcre-utils';
 import type { 
   Reporters, 
   VariationsOnly, 
@@ -8,6 +14,15 @@ import type {
   SpecialFormats,
   RegexVariables 
 } from './types.js';
+
+// Re-export the imported functions for use by index.ts
+export { 
+  escapeRegex, 
+  substituteEdition, 
+  substituteEditions, 
+  getPCREPatternFromData,
+  convertNamedGroups
+};
 
 /**
  * Builds a dictionary of variations to canonical reporters.
@@ -228,132 +243,4 @@ export function recursiveSubstitute(
   // This matches the Python behavior where unresolved variables are left as-is
   
   return oldVal;
-}
-
-/**
- * Escape special regex characters
- */
-export function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-/**
- * Insert edition_name in place of $edition.
- */
-export function substituteEdition(regex: string, editionName: string): string {
-  return regex.replace(/\$\{?edition\}?/g, escapeRegex(editionName));
-}
-
-/**
- * Insert edition strings for the given edition into a regex with an $edition placeholder.
- * Example:
- *     substituteEditions('\\d+ $edition \\d+', 'Foo.', {'Foo. Var.': 'Foo.'})
- *     "\\d+ (?:Foo\\.|Foo\\. Var\\.) \\d+"
- */
-export function substituteEditions(
-  regex: string, 
-  editionName: string, 
-  variations: Record<string, string>
-): string[] {
-  if (!regex.includes('$edition') && !regex.includes('${edition}')) {
-    return [regex];
-  }
-  
-  const editionStrings = [editionName];
-  for (const [k, v] of Object.entries(variations)) {
-    if (v === editionName) {
-      editionStrings.push(k);
-    }
-  }
-  
-  // Create a single regex with alternation group like Python does
-  const escapedEditions = editionStrings.map(edition => escapeRegex(edition));
-  const editionGroup = `(?:${escapedEditions.join('|')})`;
-  const substitutedRegex = regex.replace(/\$\{?edition\}?/g, editionGroup);
-  
-  return [substitutedRegex];
-}
-
-/**
- * Convert Python named capture groups (?P<name>...) to PCRE format (?<name>...)
- */
-export function convertNamedGroups(pattern: string): string {
-  return pattern.replace(/\(\?P<([^>]+)>/g, '(?<$1>');
-}
-
-/**
- * Compile a regex pattern using PCRE
- * CRITICAL: This uses @syntropiq/libpcre-ts, NOT JavaScript RegExp
- */
-export async function compileRegex(pattern: string): Promise<PCRERegex> {
-  // Convert named groups from Python to PCRE format
-  const pcrePattern = convertNamedGroups(pattern);
-  
-  // Initialize PCRE module and compile pattern
-  const pcre = new PCRE();
-  await pcre.init();
-  
-  return pcre.compile(pcrePattern);
-}
-
-/**
- * Get a PCRE pattern from the pre-converted regex data, with substitutions applied.
- * This avoids runtime Python->PCRE conversion and uses pre-converted patterns.
- */
-export function getPCREPatternFromData(
-  regexData: any, 
-  templatePath: string, 
-  substitutions: Record<string, string> = {}
-): string {
-  // Navigate to the template in the regex data structure
-  const pathParts = templatePath.split('.');
-  let current = regexData;
-  
-  for (const part of pathParts) {
-    if (current && typeof current === 'object' && part in current) {
-      current = current[part];
-    } else {
-      throw new Error(`Template path '${templatePath}' not found in regex data`);
-    }
-  }
-  
-  if (typeof current === 'object' && '' in current) {
-    current = current[''];
-  }
-  
-  if (typeof current !== 'string') {
-    throw new Error(`Template at '${templatePath}' is not a string pattern`);
-  }
-  
-  let pattern = current;
-  
-  // Apply predefined variable substitutions from regex data
-  const variableMap: Record<string, string> = {
-    '$volume': regexData.volume?.[''] || '(?<volume>\\d+)',
-    '$page': regexData.page?.[''] || '(?<page>\\d+)',
-    '$page_with_commas': regexData.page?.with_commas || '(?<page>\\d(?:[\\d,]*\\d)?)',
-    '$page_with_commas_and_suffix': regexData.page?.with_commas_and_suffix || '(?<page>\\d(?:[\\d,]*\\d)?[A-Z]?)',
-    '$page_with_letter': regexData.page?.with_letter || '(?<page>\\d+[a-zA-Z])',
-    '$page_with_periods': regexData.page?.with_periods || '(?<page>\\d(?:[\\d.]*\\d)?)',
-    '$page_with_roman_numerals': regexData.page?.with_roman_numerals || '(?<page>[cC]?(?:[xX][cC]|[xX][lL]|[lL]?[xX]{1,3})(?:[iI][xX]|[iI][vV]|[vV]?[iI]{0,3})|(?:[cC]?[lL]?)(?:[iI][xX]|[iI][vV]|[vV]?[iI]{1,3})|(?:[lL][vV]|[cC][vV]|[cC][lL]|[cC][lL][vV]))',
-    '$law_section': regexData.law?.section || '(?<section>(?:\\d+(?:[.:\\-]\\d+){0,3})|(?:\\d+(?:\\((?:[a-zA-Z]{1}|\\d{1,2})\\))+))',
-    '$law_subject': regexData.law?.subject || '(?<subject>[A-Z][.\\-\'A-Za-z]*(?: [A-Z][.\\-\'A-Za-z]*| &){,4})',
-    '$law_day': regexData.law?.day || '(?<day>\\d{1,2}),?',
-    '$law_month': regexData.law?.month || '(?<month>[A-Z][a-z]+\\.?)',
-    '$law_year': regexData.law?.year || '(?<year>1\\d{3}|20\\d{2})'
-  };
-  
-  // Apply predefined variable substitutions
-  for (const [variable, replacement] of Object.entries(variableMap)) {
-    const regex = new RegExp(`\\$\\{?${variable.slice(1)}\\}?`, 'g');
-    pattern = pattern.replace(regex, replacement);
-  }
-  
-  // Apply custom substitutions passed as parameters
-  for (const [key, value] of Object.entries(substitutions)) {
-    const regex = new RegExp(`\\$\\{?${key}\\}?`, 'g');
-    pattern = pattern.replace(regex, value);
-  }
-  
-  return pattern;
 }
