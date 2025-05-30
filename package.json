@@ -16,7 +16,8 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "vitest",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "test:run": "vitest run",
     "dev": "tsc --watch",
     "prepublishOnly": "npm run build"
