@@ -86,7 +86,8 @@ export {
   escapeRegex,
   substituteEdition,
   substituteEditions,
-  convertNamedGroups
+  convertNamedGroups,
+  getPCREPatternFromData
 } from './utils.js';
 
 export { compileRegex } from './compileRegex.js';
@@ -117,3 +118,6 @@ try {
 } catch (error) {
   console.warn('Could not load converted regex data:', error);
 }
+
+// Export pre-converted PCRE regex data
+export const PCRE_REGEX_DATA = REGEX_DATA;

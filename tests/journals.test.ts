@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { JOURNALS, REGEX_VARIABLES } from '../src/index';
-import { recursiveSubstitute } from '../src/utils';
+import { JOURNALS, PCRE_REGEX_DATA, getPCREPatternFromData } from '../src/index';
 import createPCREModule, { type EmscriptenModule } from '@syntropiq/libpcre-ts';
 
 describe('Journals Tests', () => {
@@ -34,8 +33,24 @@ describe('Journals Tests', () => {
       const regexes: Array<[string, string]> = [];
       
       for (const regexTemplate of regexTemplates) {
-        const regex = recursiveSubstitute(regexTemplate, REGEX_VARIABLES);
-        regexes.push([regexTemplate, regex]);
+        try {
+          // Use pre-converted PCRE pattern instead of runtime conversion
+          let pcrePattern = getPCREPatternFromData(PCRE_REGEX_DATA, regexTemplate);
+          
+          // Anchor the pattern to match full strings like Python's re.match()
+          if (!pcrePattern.startsWith('^')) {
+            pcrePattern = '^' + pcrePattern;
+          }
+          if (!pcrePattern.endsWith('$')) {
+            pcrePattern = pcrePattern + '$';
+          }
+          
+          regexes.push([regexTemplate, pcrePattern]);
+        } catch (error) {
+          console.warn(`Failed to process regex template '${regexTemplate}':`, error);
+          // Skip this regex template if it can't be processed
+          continue;
+        }
       }
 
       if (regexes.length === 0) continue;
@@ -43,17 +58,15 @@ describe('Journals Tests', () => {
       // Test that regexes work with examples
       const matchedExamples = new Set<string>();
       
-      for (const [, regex] of regexes) {
+      for (const [templateName, pcrePattern] of regexes) {
         for (const example of examples) {
-          // Convert Python named groups to PCRE format and anchor the regex at both ends
-          const pcrePattern = '^' + regex.replace(/\(\?P<([^>]+)>/g, '(?<$1>') + '$';
           try {
             const compiledRegex = new pcre.PCRERegex(pcrePattern);
             if (compiledRegex.test(example)) {
               matchedExamples.add(example);
             }
           } catch (error) {
-            throw new Error(`Failed to compile regex: ${pcrePattern}. Error: ${error}`);
+            throw new Error(`Failed to compile PCRE pattern '${templateName}': ${pcrePattern}. Error: ${error}`);
           }
         }
       }

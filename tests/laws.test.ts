@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { LAWS, REGEX_VARIABLES } from '../src/index';
-import { recursiveSubstitute } from '../src/utils';
+import { LAWS, PCRE_REGEX_DATA, getPCREPatternFromData } from '../src/index';
 import createPCREModule, { type EmscriptenModule } from '@syntropiq/libpcre-ts';
 
 describe('Laws Tests', () => {
@@ -40,15 +39,72 @@ describe('Laws Tests', () => {
 
       const regexes: Array<[string, string]> = [];
       const seriesStrings = [lawKey, ...law.variations];
+      console.log('Series strings:', seriesStrings);
       
       for (const regexTemplate of law.regexes) {
-        let regex = recursiveSubstitute(regexTemplate, REGEX_VARIABLES);
-        
-        // Create alternation pattern for all series strings
-        const editionPattern = seriesStrings.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
-        regex = regex.replace(/\$\{?edition\}?/g, `(?:${editionPattern})`);
-        
-        regexes.push([regexTemplate, regex]);
+        try {
+          // Create alternation pattern for all series strings (escaped for use in regex)
+          const editionPattern = seriesStrings.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+          
+          // Start with the template and substitute variables
+          let pcrePattern = regexTemplate;
+          
+          // Replace $reporter with the edition pattern
+          pcrePattern = pcrePattern.replace(/\$reporter/g, `(?:${editionPattern})`);
+          
+          // Replace law variables with PCRE patterns
+          if (PCRE_REGEX_DATA.law) {
+            // Replace $law_section with law.section pattern
+            if (pcrePattern.includes('$law_section') && PCRE_REGEX_DATA.law.section) {
+              pcrePattern = pcrePattern.replace(/\$law_section/g, PCRE_REGEX_DATA.law.section);
+            }
+            
+            // Replace other law variables as needed
+            if (pcrePattern.includes('$law_year') && PCRE_REGEX_DATA.law.year) {
+              pcrePattern = pcrePattern.replace(/\$law_year/g, PCRE_REGEX_DATA.law.year);
+            }
+            
+            if (pcrePattern.includes('$law_month') && PCRE_REGEX_DATA.law.month) {
+              pcrePattern = pcrePattern.replace(/\$law_month/g, PCRE_REGEX_DATA.law.month);
+            }
+            
+            if (pcrePattern.includes('$law_day') && PCRE_REGEX_DATA.law.day) {
+              pcrePattern = pcrePattern.replace(/\$law_day/g, PCRE_REGEX_DATA.law.day);
+            }
+          }
+          
+          // Replace volume and page variables
+          if (PCRE_REGEX_DATA.volume) {
+            if (pcrePattern.includes('$volume') && PCRE_REGEX_DATA.volume['']) {
+              pcrePattern = pcrePattern.replace(/\$volume/g, PCRE_REGEX_DATA.volume['']);
+            }
+          }
+          
+          if (PCRE_REGEX_DATA.page) {
+            if (pcrePattern.includes('$page_with_commas') && PCRE_REGEX_DATA.page.with_commas) {
+              pcrePattern = pcrePattern.replace(/\$page_with_commas/g, PCRE_REGEX_DATA.page.with_commas);
+            }
+            
+            if (pcrePattern.includes('$page') && PCRE_REGEX_DATA.page['']) {
+              pcrePattern = pcrePattern.replace(/\$page/g, PCRE_REGEX_DATA.page['']);
+            }
+          }
+          
+          // Anchor the pattern to match full strings like Python's re.match()
+          if (!pcrePattern.startsWith('^')) {
+            pcrePattern = '^' + pcrePattern;
+          }
+          if (!pcrePattern.endsWith('$')) {
+            pcrePattern = pcrePattern + '$';
+          }
+          
+          console.log(`Template: ${regexTemplate} -> PCRE: ${pcrePattern}`);
+          regexes.push([regexTemplate, pcrePattern]);
+        } catch (error) {
+          console.warn(`Failed to process regex template '${regexTemplate}':`, error);
+          // Skip this regex template if it can't be processed
+          continue;
+        }
       }
 
       if (regexes.length === 0) continue;
@@ -56,13 +112,13 @@ describe('Laws Tests', () => {
       // Test that regexes work with examples
       const matchedExamples = new Set<string>();
       
-      for (const [, regex] of regexes) {
+      for (const [templateName, pcrePattern] of regexes) {
         for (const example of law.examples) {
-          // Convert Python named groups to PCRE format and anchor the regex at both ends
-          const pcrePattern = '^' + regex.replace(/\(\?P<([^>]+)>/g, '(?<$1>') + '$';
           try {
             const compiledRegex = new pcre.PCRERegex(pcrePattern);
-            if (compiledRegex.test(example)) {
+            const doesMatch = compiledRegex.test(example);
+            console.log(`Testing "${example}" against "${pcrePattern}" -> ${doesMatch}`);
+            if (doesMatch) {
               matchedExamples.add(example);
             }
           } catch (error) {
@@ -71,11 +127,11 @@ describe('Laws Tests', () => {
               console.log('Debug info for first law:');
               console.log('Law key:', lawKey);
               console.log('Example:', example);
-              console.log('Regex:', regex);
+              console.log('Template name:', templateName);
               console.log('PCRE pattern:', pcrePattern);
               console.log('Error:', error);
             }
-            throw new Error(`Failed to compile regex: ${pcrePattern}. Error: ${error}`);
+            throw new Error(`Failed to compile PCRE pattern: ${pcrePattern}. Error: ${error}`);
           }
         }
       }

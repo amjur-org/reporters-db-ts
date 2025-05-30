@@ -295,3 +295,65 @@ export async function compileRegex(pattern: string): Promise<PCRERegex> {
   
   return pcre.compile(pcrePattern);
 }
+
+/**
+ * Get a PCRE pattern from the pre-converted regex data, with substitutions applied.
+ * This avoids runtime Python->PCRE conversion and uses pre-converted patterns.
+ */
+export function getPCREPatternFromData(
+  regexData: any, 
+  templatePath: string, 
+  substitutions: Record<string, string> = {}
+): string {
+  // Navigate to the template in the regex data structure
+  const pathParts = templatePath.split('.');
+  let current = regexData;
+  
+  for (const part of pathParts) {
+    if (current && typeof current === 'object' && part in current) {
+      current = current[part];
+    } else {
+      throw new Error(`Template path '${templatePath}' not found in regex data`);
+    }
+  }
+  
+  if (typeof current === 'object' && '' in current) {
+    current = current[''];
+  }
+  
+  if (typeof current !== 'string') {
+    throw new Error(`Template at '${templatePath}' is not a string pattern`);
+  }
+  
+  let pattern = current;
+  
+  // Apply predefined variable substitutions from regex data
+  const variableMap: Record<string, string> = {
+    '$volume': regexData.volume?.[''] || '(?<volume>\\d+)',
+    '$page': regexData.page?.[''] || '(?<page>\\d+)',
+    '$page_with_commas': regexData.page?.with_commas || '(?<page>\\d(?:[\\d,]*\\d)?)',
+    '$page_with_commas_and_suffix': regexData.page?.with_commas_and_suffix || '(?<page>\\d(?:[\\d,]*\\d)?[A-Z]?)',
+    '$page_with_letter': regexData.page?.with_letter || '(?<page>\\d+[a-zA-Z])',
+    '$page_with_periods': regexData.page?.with_periods || '(?<page>\\d(?:[\\d.]*\\d)?)',
+    '$page_with_roman_numerals': regexData.page?.with_roman_numerals || '(?<page>[cC]?(?:[xX][cC]|[xX][lL]|[lL]?[xX]{1,3})(?:[iI][xX]|[iI][vV]|[vV]?[iI]{0,3})|(?:[cC]?[lL]?)(?:[iI][xX]|[iI][vV]|[vV]?[iI]{1,3})|(?:[lL][vV]|[cC][vV]|[cC][lL]|[cC][lL][vV]))',
+    '$law_section': regexData.law?.section || '(?<section>(?:\\d+(?:[.:\\-]\\d+){0,3})|(?:\\d+(?:\\((?:[a-zA-Z]{1}|\\d{1,2})\\))+))',
+    '$law_subject': regexData.law?.subject || '(?<subject>[A-Z][.\\-\'A-Za-z]*(?: [A-Z][.\\-\'A-Za-z]*| &){,4})',
+    '$law_day': regexData.law?.day || '(?<day>\\d{1,2}),?',
+    '$law_month': regexData.law?.month || '(?<month>[A-Z][a-z]+\\.?)',
+    '$law_year': regexData.law?.year || '(?<year>1\\d{3}|20\\d{2})'
+  };
+  
+  // Apply predefined variable substitutions
+  for (const [variable, replacement] of Object.entries(variableMap)) {
+    const regex = new RegExp(`\\$\\{?${variable.slice(1)}\\}?`, 'g');
+    pattern = pattern.replace(regex, replacement);
+  }
+  
+  // Apply custom substitutions passed as parameters
+  for (const [key, value] of Object.entries(substitutions)) {
+    const regex = new RegExp(`\\$\\{?${key}\\}?`, 'g');
+    pattern = pattern.replace(regex, value);
+  }
+  
+  return pattern;
+}
