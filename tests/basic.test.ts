@@ -374,6 +374,11 @@ describe('LawsTest', () => {
           regex = regex.replace(/\$\{?edition\}?/g, reporterPattern);
           regex = convertNamedGroups(regex);
 
+          // Debug output for failing cases
+          console.log("LAW:", law.name);
+          console.log("REGEX:", regex);
+          console.log("EXAMPLES:", law.examples);
+
           regexes.push({ template: regexTemplate, compiled: regex });
         } catch (error) {
           // Skip regexes that can't be resolved due to circular references
@@ -384,6 +389,8 @@ describe('LawsTest', () => {
       const { errors } = await checkRegexes(regexes, law.examples);
       if (errors.length > 0) {
         allErrors.push(`Law ${law.name}: ${errors.join('; ')}`);
+        // Print errors for debugging
+        console.log("ERRORS:", errors);
       }
     }
 
