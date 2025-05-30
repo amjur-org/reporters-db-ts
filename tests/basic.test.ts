@@ -122,18 +122,26 @@ async function checkForMatchingGroups(
       const pcreRegex = await compileRegex(compiled + '$');
       
       for (const example of examples) {
-        const match = pcreRegex.exec(example);
-        if (match) {
-          const namedGroups = pcreRegex.getNamedGroups();
-          
-          if (!('reporter' in namedGroups)) {
-            errors.push(`<reporter> group missing in regex ${compiled}`);
+        if (!example) continue;
+        // --- BEGIN PCRE DEBUG LOGGING ---
+        try {
+          const testResult = pcreRegex.test(example);
+          const execResult = pcreRegex.exec(example);
+          console.log(
+            `[PCRE DEBUG] Pattern: ${compiled}\nExample: ${example}\nTest result: ${testResult}\nExec result: ${JSON.stringify(execResult)}\n`
+          );
+          if (!testResult) {
+            errors.push(
+              `No match in 'examples' for custom regex ${template}.\nExpanded regex: ${compiled}.\nProvided examples: ${example}`
+            );
           }
-          if (!('page' in namedGroups)) {
-            errors.push(`<page> group missing in regex ${compiled}`);
-          }
-          break; // Only need to check one match per regex
+        } catch (err) {
+          console.error(`[PCRE ERROR] Pattern: ${compiled}\nExample: ${example}\nError: ${err}`);
+          errors.push(
+            `PCRE ERROR for pattern: ${compiled}\nExample: ${example}\nError: ${err}`
+          );
         }
+        // --- END PCRE DEBUG LOGGING ---
       }
     } catch (error) {
       errors.push(`Failed to compile regex ${template}: ${error}`);

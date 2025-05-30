@@ -86,9 +86,10 @@ export {
   escapeRegex,
   substituteEdition,
   substituteEditions,
-  convertNamedGroups,
-  compileRegex
+  convertNamedGroups
 } from './utils.js';
+
+export { compileRegex } from './compileRegex.js';
 
 // Re-export types
 export type {
