@@ -266,7 +266,12 @@ export function substituteEditions(
     }
   }
   
-  return editionStrings.map(edition => substituteEdition(regex, edition));
+  // Create a single regex with alternation group like Python does
+  const escapedEditions = editionStrings.map(edition => escapeRegex(edition));
+  const editionGroup = `(?:${escapedEditions.join('|')})`;
+  const substitutedRegex = regex.replace(/\$\{?edition\}?/g, editionGroup);
+  
+  return [substitutedRegex];
 }
 
 /**

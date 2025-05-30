@@ -1,8 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { JOURNALS, REGEX_VARIABLES } from '../src/index';
 import { recursiveSubstitute } from '../src/utils';
+import createPCREModule, { type EmscriptenModule } from '@syntropiq/libpcre-ts';
 
 describe('Journals Tests', () => {
+  let pcre: EmscriptenModule;
+  
+  beforeAll(async () => {
+    pcre = await createPCREModule();
+  });
+
   const iterJournals = function* () {
     for (const [journalKey, journalList] of Object.entries(JOURNALS)) {
       for (const journal of journalList) {
@@ -38,9 +45,15 @@ describe('Journals Tests', () => {
       
       for (const [, regex] of regexes) {
         for (const example of examples) {
-          const fullRegex = new RegExp(regex + '$');
-          if (fullRegex.test(example)) {
-            matchedExamples.add(example);
+          // Convert Python named groups to PCRE format and anchor the regex at both ends
+          const pcrePattern = '^' + regex.replace(/\(\?P<([^>]+)>/g, '(?<$1>') + '$';
+          try {
+            const compiledRegex = new pcre.PCRERegex(pcrePattern);
+            if (compiledRegex.test(example)) {
+              matchedExamples.add(example);
+            }
+          } catch (error) {
+            throw new Error(`Failed to compile regex: ${pcrePattern}. Error: ${error}`);
           }
         }
       }

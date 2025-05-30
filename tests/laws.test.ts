@@ -1,8 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { LAWS, REGEX_VARIABLES } from '../src/index';
-import { recursiveSubstitute, substituteEditions } from '../src/utils';
+import { recursiveSubstitute } from '../src/utils';
+import createPCREModule, { type EmscriptenModule } from '@syntropiq/libpcre-ts';
 
 describe('Laws Tests', () => {
+  let pcre: EmscriptenModule;
+  
+  beforeAll(async () => {
+    pcre = await createPCREModule();
+  });
+
   const iterLaws = function* () {
     for (const [lawKey, lawList] of Object.entries(LAWS)) {
       for (const law of lawList) {
@@ -13,14 +20,23 @@ describe('Laws Tests', () => {
 
   it('should have working regexes for laws with examples', () => {
     if (Object.keys(LAWS).length === 0) {
+      console.log('No LAWS data found');
       return; // Skip if no laws data
     }
 
+    console.log('Total laws keys:', Object.keys(LAWS).length);
+    
     let testedCount = 0;
+    let foundLawsWithExamples = 0;
     
     for (const [lawKey, law] of iterLaws()) {
       if (!law.examples || law.examples.length === 0) continue;
       if (!law.regexes || law.regexes.length === 0) continue;
+      
+      foundLawsWithExamples++;
+      console.log(`\nTesting law ${foundLawsWithExamples}: ${lawKey}`);
+      console.log('Examples:', law.examples);
+      console.log('Regexes:', law.regexes);
 
       const regexes: Array<[string, string]> = [];
       const seriesStrings = [lawKey, ...law.variations];
@@ -42,14 +58,36 @@ describe('Laws Tests', () => {
       
       for (const [, regex] of regexes) {
         for (const example of law.examples) {
-          const fullRegex = new RegExp(regex + '$');
-          if (fullRegex.test(example)) {
-            matchedExamples.add(example);
+          // Convert Python named groups to PCRE format and anchor the regex at both ends
+          const pcrePattern = '^' + regex.replace(/\(\?P<([^>]+)>/g, '(?<$1>') + '$';
+          try {
+            const compiledRegex = new pcre.PCRERegex(pcrePattern);
+            if (compiledRegex.test(example)) {
+              matchedExamples.add(example);
+            }
+          } catch (error) {
+            // Add debug info on first failing law
+            if (testedCount === 0) {
+              console.log('Debug info for first law:');
+              console.log('Law key:', lawKey);
+              console.log('Example:', example);
+              console.log('Regex:', regex);
+              console.log('PCRE pattern:', pcrePattern);
+              console.log('Error:', error);
+            }
+            throw new Error(`Failed to compile regex: ${pcrePattern}. Error: ${error}`);
           }
         }
       }
 
       // Check that all examples are matched
+      if (testedCount === 0 && matchedExamples.size === 0) {
+        console.log('First law debug:');
+        console.log('Law key:', lawKey);
+        console.log('Examples:', law.examples);
+        console.log('Regexes count:', regexes.length);
+        console.log('Matched examples size:', matchedExamples.size);
+      }
       expect(matchedExamples.size).toBe(law.examples.length);
       
       testedCount++;

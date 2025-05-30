@@ -1,8 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { REPORTERS, REGEX_VARIABLES } from '../src/index';
 import { recursiveSubstitute, substituteEditions } from '../src/utils';
+import createPCREModule, { type EmscriptenModule } from '@syntropiq/libpcre-ts';
 
 describe('Regex Tests', () => {
+  let pcre: EmscriptenModule;
+  
+  beforeAll(async () => {
+    pcre = await createPCREModule();
+  });
+
   /**
    * Check that each regex matches at least one example, and each example matches at least one regex
    */
@@ -13,10 +20,16 @@ describe('Regex Tests', () => {
     for (const [regexTemplate, regex] of regexes) {
       let hasMatch = false;
       for (const example of examples) {
-        const fullRegex = new RegExp(regex + '$');
-        if (fullRegex.test(example)) {
-          hasMatch = true;
-          matchedExamples.add(example);
+        // Convert Python named groups to PCRE format and anchor the regex at both ends
+        const pcrePattern = '^' + regex.replace(/\(\?P<([^>]+)>/g, '(?<$1>') + '$';
+        try {
+          const compiledRegex = new pcre.PCRERegex(pcrePattern);
+          if (compiledRegex.test(example)) {
+            hasMatch = true;
+            matchedExamples.add(example);
+          }
+        } catch (error) {
+          throw new Error(`Failed to compile regex: ${pcrePattern}. Error: ${error}`);
         }
       }
       if (!hasMatch) {
@@ -43,13 +56,19 @@ describe('Regex Tests', () => {
   const checkForMatchingGroups = (regexes: Array<[string, string]>, examples: string[]) => {
     for (const [, regex] of regexes) {
       for (const example of examples) {
-        const fullRegex = new RegExp(regex + '$');
-        const match = fullRegex.exec(example);
-        if (match) {
-          expect(match.groups).toBeDefined();
-          expect(match.groups).toHaveProperty('reporter');
-          expect(match.groups).toHaveProperty('page');
-          break; // Found a match, move to next regex
+        // Convert Python named groups to PCRE format and anchor the regex at both ends
+        const pcrePattern = '^' + regex.replace(/\(\?P<([^>]+)>/g, '(?<$1>') + '$';
+        try {
+          const compiledRegex = new pcre.PCRERegex(pcrePattern);
+          const match = compiledRegex.exec(example);
+          if (match) {
+            const namedGroups = compiledRegex.getNamedGroups();
+            expect(namedGroups).toHaveProperty('reporter');
+            expect(namedGroups).toHaveProperty('page');
+            break; // Found a match, move to next regex
+          }
+        } catch (error) {
+          throw new Error(`Failed to compile regex: ${pcrePattern}. Error: ${error}`);
         }
       }
     }

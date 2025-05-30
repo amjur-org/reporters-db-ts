@@ -28,8 +28,8 @@ describe('Mapping Validation Tests', () => {
     
     for (const [variation, targets] of Object.entries(VARIATIONS_ONLY)) {
       for (const target of targets) {
-        // Each variation should map to a valid reporter key
-        expect(REPORTERS).toHaveProperty(target);
+        // Each variation should map to a valid edition key (not reporter key)
+        expect(EDITIONS).toHaveProperty(target);
         
         testedCount++;
       }
