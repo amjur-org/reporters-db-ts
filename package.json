@@ -1,0 +1,52 @@
+{
+  "name": "@amjur/reporters-db-ts",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amjur-org/reporters-db-ts.git"
+  },
+  "keywords": [
+    "legal",
+    "citations",
+    "court-reporters",
+    "law",
+    "typescript"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/amjur-org/reporters-db-ts/issues"
+  },
+  "homepage": "https://github.com/amjur-org/reporters-db-ts#readme",
+  "description": "TypeScript port of the Python reporters-db library for legal court reporter citations",
+  "dependencies": {
+    "@syntropiq/libpcre-ts": "^1.0.0",
+    "unidecode": "^1.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.27",
+    "@types/unidecode": "^1.1.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.4"
+  }
+}
