@@ -3,7 +3,12 @@ import {
   STATE_ABBREVIATIONS, 
   CASE_NAME_ABBREVIATIONS,
   LAWS,
-  JOURNALS 
+  JOURNALS,
+  VARIATIONS_ONLY,
+  EDITIONS,
+  NAMES_TO_EDITIONS,
+  SPECIAL_FORMATS,
+  REGEX_VARIABLES
 } from '../src/index';
 
 describe('Data Exports Tests', () => {
@@ -18,6 +23,8 @@ describe('Data Exports Tests', () => {
     keys.slice(0, 3).forEach(key => {
       expect(typeof key).toBe('string');
       expect(typeof STATE_ABBREVIATIONS[key]).toBe('string');
+      expect(key.length).toBeGreaterThan(0);
+      expect(STATE_ABBREVIATIONS[key].length).toBeGreaterThan(0);
     });
   });
 
@@ -81,6 +88,75 @@ describe('Data Exports Tests', () => {
           expect(Array.isArray(firstJournal.regexes)).toBe(true);
         }
       }
+    }
+  });
+
+  it('should export VARIATIONS_ONLY as object', () => {
+    expect(typeof VARIATIONS_ONLY).toBe('object');
+    expect(VARIATIONS_ONLY).not.toBeNull();
+    
+    const keys = Object.keys(VARIATIONS_ONLY);
+    if (keys.length > 0) {
+      const firstKey = keys[0];
+      const variations = VARIATIONS_ONLY[firstKey];
+      expect(Array.isArray(variations)).toBe(true);
+      
+      for (const variation of variations) {
+        expect(typeof variation).toBe('string');
+        expect(variation.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('should export EDITIONS as object', () => {
+    expect(typeof EDITIONS).toBe('object');
+    expect(EDITIONS).not.toBeNull();
+    
+    const keys = Object.keys(EDITIONS);
+    expect(keys.length).toBeGreaterThan(0);
+    
+    // Sample a few editions
+    keys.slice(0, 3).forEach(key => {
+      expect(typeof key).toBe('string');
+      expect(typeof EDITIONS[key]).toBe('string');
+      expect(key.length).toBeGreaterThan(0);
+      expect(EDITIONS[key].length).toBeGreaterThan(0);
+    });
+  });
+
+  it('should export NAMES_TO_EDITIONS as object', () => {
+    expect(typeof NAMES_TO_EDITIONS).toBe('object');
+    expect(NAMES_TO_EDITIONS).not.toBeNull();
+    
+    const keys = Object.keys(NAMES_TO_EDITIONS);
+    if (keys.length > 0) {
+      const firstKey = keys[0];
+      const editions = NAMES_TO_EDITIONS[firstKey];
+      expect(Array.isArray(editions)).toBe(true);
+      
+      for (const edition of editions) {
+        expect(typeof edition).toBe('string');
+        expect(edition.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('should export SPECIAL_FORMATS as object', () => {
+    expect(typeof SPECIAL_FORMATS).toBe('object');
+    expect(SPECIAL_FORMATS).not.toBeNull();
+  });
+
+  it('should export REGEX_VARIABLES as object', () => {
+    expect(typeof REGEX_VARIABLES).toBe('object');
+    expect(REGEX_VARIABLES).not.toBeNull();
+    
+    const keys = Object.keys(REGEX_VARIABLES);
+    if (keys.length > 0) {
+      // Sample a few regex variables
+      keys.slice(0, 3).forEach(key => {
+        expect(typeof key).toBe('string');
+        expect(typeof REGEX_VARIABLES[key]).toBe('string');
+      });
     }
   });
 });

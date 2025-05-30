@@ -41,6 +41,7 @@
   "description": "TypeScript port of the Python reporters-db library for legal court reporter citations",
   "dependencies": {
     "@syntropiq/libpcre-ts": "^1.0.0",
+    "ajv": "^8.17.1",
     "unidecode": "^1.1.0"
   },
   "devDependencies": {

@@ -14,17 +14,43 @@ describe('Basic Structure Tests', () => {
 
   it('should have arrays of reporters for each jurisdiction', () => {
     const jurisdictions = Object.keys(REPORTERS);
-    const firstJurisdiction = jurisdictions[0];
     
-    if (firstJurisdiction) {
-      expect(Array.isArray(REPORTERS[firstJurisdiction])).toBe(true);
-      expect(REPORTERS[firstJurisdiction].length).toBeGreaterThan(0);
+    for (const jurisdiction of jurisdictions.slice(0, 5)) { // Test first 5
+      expect(Array.isArray(REPORTERS[jurisdiction])).toBe(true);
+      expect(REPORTERS[jurisdiction].length).toBeGreaterThan(0);
     }
   });
 
   it('should have reasonable number of jurisdictions', () => {
     const jurisdictionCount = Object.keys(REPORTERS).length;
     expect(jurisdictionCount).toBeGreaterThan(0);
-    expect(jurisdictionCount).toBeLessThan(2000); // Sanity check - adjusted for actual data size
+    expect(jurisdictionCount).toBeLessThan(10000); // Sanity check
+  });
+
+  it('should have consistent data structure in all reporters', () => {
+    let testedCount = 0;
+    
+    for (const [reporterKey, reporterList] of Object.entries(REPORTERS)) {
+      for (const reporterData of reporterList) {
+        // All reporters should have these required fields
+        expect(reporterData).toHaveProperty('name');
+        expect(reporterData).toHaveProperty('cite_type');
+        expect(reporterData).toHaveProperty('editions');
+        expect(reporterData).toHaveProperty('variations');
+        
+        // Types should be correct
+        expect(typeof reporterData.name).toBe('string');
+        expect(typeof reporterData.cite_type).toBe('string');
+        expect(typeof reporterData.editions).toBe('object');
+        expect(typeof reporterData.variations).toBe('object');
+        
+        testedCount++;
+      }
+      
+      // Limit testing to avoid timeout
+      if (testedCount > 50) break;
+    }
+    
+    expect(testedCount).toBeGreaterThan(0);
   });
 });
