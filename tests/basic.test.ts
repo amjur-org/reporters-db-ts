@@ -18,7 +18,8 @@ import {
   recursiveSubstitute,
   escapeRegex,
   substituteEdition,
-  compileRegex
+  compileRegex,
+  convertNamedGroups
 } from '../src/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -367,9 +368,12 @@ describe('LawsTest', () => {
       for (const regexTemplate of law.regexes) {
         try {
           let regex = recursiveSubstitute(regexTemplate, REGEX_VARIABLES);
-          const editionPattern = `(?:${seriesStrings.map(escapeRegex).join('|')})`;
-          regex = regex.replace(/\$\{?edition\}?/g, editionPattern);
-          
+          const reporterPattern = `(?:${[lawKey, ...law.variations].map(escapeRegex).join('|')})`;
+          // Substitute $reporter and $edition (for future-proofing)
+          regex = regex.replace(/\$\{?reporter\}?/g, reporterPattern);
+          regex = regex.replace(/\$\{?edition\}?/g, reporterPattern);
+          regex = convertNamedGroups(regex);
+
           regexes.push({ template: regexTemplate, compiled: regex });
         } catch (error) {
           // Skip regexes that can't be resolved due to circular references
