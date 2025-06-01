@@ -1,2 +1,3 @@
 // Re-export compileRegex from xtrax for backward compatibility
-export { compileRegex } from '@syntropiq/xtrax/pcre-utils';
+import { PCREUtils } from '@syntropiq/xtrax';
+export const { compileRegex } = PCREUtils;
