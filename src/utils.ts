@@ -1,11 +1,13 @@
 import unidecode from 'unidecode';
-import { 
-  escapeRegex, 
-  substituteEdition, 
-  substituteEditions, 
+import { PCREUtils } from '@syntropiq/xtrax';
+
+const {
+  escapeRegex,
+  substituteEdition,
+  substituteEditions,
   getPCREPatternFromData,
   convertNamedGroups
-} from '@syntropiq/xtrax/pcre-utils';
+} = PCREUtils;
 import type { 
   Reporters, 
   VariationsOnly, 
