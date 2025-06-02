@@ -1,6 +1,4 @@
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+// CloudFlare Workers compatible imports - no file system operations
 import {
   suckOutVariationsOnly,
   suckOutEditions,
@@ -25,10 +23,14 @@ import type {
   EditionData
 } from './types.js';
 
-// Get the directory of this module
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const dbRoot = join(__dirname, '../reporters_db');
+// Import JSON data directly as ES modules (bundler-friendly)
+import reportersData from '../reporters_db/data/reporters.json';
+import stateAbbreviationsData from '../reporters_db/data/state_abbreviations.json';
+import caseNameAbbreviationsData from '../reporters_db/data/case_name_abbreviations.json';
+import lawsData from '../reporters_db/data/laws.json';
+import journalsData from '../reporters_db/data/journals.json';
+import regexesData from '../reporters_db/data/regexes.json';
+import pcreRegexData from '../regexes_pcre.json';
 
 /**
  * Parse datetime strings in JSON data
@@ -41,33 +43,21 @@ function datetimeParser(key: string, value: unknown): unknown {
 }
 
 /**
- * Load and parse JSON data with datetime parsing
+ * Parse JSON data with datetime parsing
  */
-function loadJsonData<T>(filePath: string): T {
-  const content = readFileSync(filePath, 'utf-8');
-  return JSON.parse(content, datetimeParser) as T;
+function parseJsonData<T>(data: any): T {
+  return JSON.parse(JSON.stringify(data), datetimeParser) as T;
 }
 
-// Load all data files
-export const REPORTERS: Reporters = loadJsonData(join(dbRoot, 'data', 'reporters.json'));
+// Load all data files from bundled imports
+export const REPORTERS: Reporters = parseJsonData(reportersData);
+export const STATE_ABBREVIATIONS: StateAbbreviations = parseJsonData(stateAbbreviationsData);
+export const CASE_NAME_ABBREVIATIONS: CaseNameAbbreviations = parseJsonData(caseNameAbbreviationsData);
+export const LAWS: Laws = parseJsonData(lawsData);
+export const JOURNALS: Journals = parseJsonData(journalsData);
 
-export const STATE_ABBREVIATIONS: StateAbbreviations = loadJsonData(
-  join(dbRoot, 'data', 'state_abbreviations.json')
-);
-
-export const CASE_NAME_ABBREVIATIONS: CaseNameAbbreviations = loadJsonData(
-  join(dbRoot, 'data', 'case_name_abbreviations.json')
-);
-
-export const LAWS: Laws = loadJsonData(join(dbRoot, 'data', 'laws.json'));
-
-export const JOURNALS: Journals = loadJsonData(join(dbRoot, 'data', 'journals.json'));
-
-// Load and process regex variables
-const RAW_REGEX_VARIABLES = loadJsonData<Record<string, unknown>>(
-  join(dbRoot, 'data', 'regexes.json')
-);
-export const REGEX_VARIABLES: RegexVariables = processVariables(RAW_REGEX_VARIABLES);
+// Process regex variables
+export const REGEX_VARIABLES: RegexVariables = processVariables(regexesData);
 
 // Generate derived data structures
 export const VARIATIONS_ONLY: VariationsOnly = suckOutVariationsOnly(REPORTERS);
@@ -110,14 +100,5 @@ export type {
   EditionData
 } from './types.js';
 
-// Load converted PCRE regexes
-const regexDataPath = join(__dirname, '..', 'regexes_pcre.json');
-let REGEX_DATA: any = {};
-try {
-  REGEX_DATA = JSON.parse(readFileSync(regexDataPath, 'utf8'));
-} catch (error) {
-  console.warn('Could not load converted regex data:', error);
-}
-
-// Export pre-converted PCRE regex data
-export const PCRE_REGEX_DATA = REGEX_DATA;
+// Export pre-converted PCRE regex data from bundled import
+export const PCRE_REGEX_DATA = pcreRegexData;
