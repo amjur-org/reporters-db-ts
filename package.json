@@ -55,5 +55,8 @@
     "ajv": "^8.17.1",
     "typescript": "latest",
     "vitest": "^3.2.1"
-  }
+  },
+  "trustedDependencies": [
+    "@syntropiq/xtrax"
+  ]
 }
