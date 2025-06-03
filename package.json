@@ -1,6 +1,6 @@
 {
   "name": "@amjur/reporters-db-ts",
-  "version": "1.1.4",
+  "version": "1.2.0",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -15,7 +15,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build:schemas": "vitest run tests/schema-validation.test.ts",
+    "build": "npm run build:schemas && tsc",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:run": "vitest run",
@@ -41,17 +42,18 @@
   "homepage": "https://github.com/amjur-org/reporters-db-ts#readme",
   "description": "TypeScript port of the Python reporters-db library for legal court reporter citations",
   "dependencies": {
-    "@syntropiq/xtrax": "^1.1.0",
-    "ajv": "^8.17.1",
-    "unidecode": "^1.1.0"
+    "@syntropiq/xtrax": "latest",
+    "unidecode": "latest"
   },
   "peerDependencies": {
-    "@syntropiq/libpcre-ts": "^1.0.1"
+    "@syntropiq/libpcre-ts": "latest"
   },
   "devDependencies": {
+    "@edge-runtime/vm": "^5.0.0",
     "@types/node": "^22.15.27",
-    "@types/unidecode": "^1.1.0",
-    "typescript": "^5.8.3",
-    "vitest": "^3.1.4"
+    "@types/unidecode": "latest",
+    "ajv": "^8.17.1",
+    "typescript": "latest",
+    "vitest": "^3.2.1"
   }
 }

@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     globals: true,
-    environment: 'node',
+    environment: 'edge-runtime', // Use Cloudflare Workers-compatible environment
     watch: false, // Disable watch mode by default
   },
 })
