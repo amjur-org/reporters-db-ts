@@ -122,7 +122,7 @@
 
     "@syntropiq/libpcre-ts": ["@syntropiq/libpcre-ts@1.0.2", "", {}, "sha512-c91LPQh+4uHEoAinUsjeWBvnwbTY+XZDZ5nDgg8lTEb/hCcBefYrfvRbHwDo4f7o5+lT8Oat8HojIKhMnpxmaQ=="],
 
-    "@syntropiq/xtrax": ["@syntropiq/xtrax@github:syntropiq/xtrax#7f121fa", { "peerDependencies": { "@syntropiq/libpcre-ts": "latest", "unidecode": "latest" } }, "syntropiq-xtrax-7f121fa"],
+    "@syntropiq/xtrax": ["@syntropiq/xtrax@github:syntropiq/xtrax#a4e266b", { "peerDependencies": { "@syntropiq/libpcre-ts": "latest", "unidecode": "latest" } }, "syntropiq-xtrax-a4e266b"],
 
     "@types/chai": ["@types/chai@5.2.2", "", { "dependencies": { "@types/deep-eql": "*" } }, "sha512-8kB30R7Hwqf40JPiKhVzodJs2Qc1ZJ5zuT3uzw5Hq/dhNCl3G3l83jfpdI1e20BP348+fV7VIL/+FxaXkqBmWg=="],
 
