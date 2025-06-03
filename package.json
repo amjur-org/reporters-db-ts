@@ -16,12 +16,12 @@
   ],
   "scripts": {
     "build:schemas": "vitest run tests/schema-validation.test.ts",
-    "build": "npm run build:schemas && tsc",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:run": "vitest run",
-    "dev": "tsc --watch",
-    "prepublishOnly": "npm run build"
+    "build": "bun run build:schemas && bun run tsc",
+    "test": "bun run vitest run",
+    "test:watch": "bun run vitest",
+    "test:run": "bun run vitest run",
+    "dev": "bun run tsc --watch",
+    "prepublishOnly": "bun run build"
   },
   "repository": {
     "type": "git",
