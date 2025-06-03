@@ -1,7 +1,8 @@
-import { PCREUtils } from '@syntropiq/xtrax';
+import { PCREUtils, TemplateEngine } from '@syntropiq/xtrax';
 declare const escapeRegex: typeof PCREUtils.escapeRegex, substituteEdition: typeof PCREUtils.substituteEdition, substituteEditions: typeof PCREUtils.substituteEditions, getPCREPatternFromData: typeof PCREUtils.getPCREPatternFromData, convertNamedGroups: typeof PCREUtils.convertNamedGroups;
-import type { Reporters, VariationsOnly, Editions, NamesToEditions, SpecialFormats, RegexVariables } from './types.js';
-export { escapeRegex, substituteEdition, substituteEditions, getPCREPatternFromData, convertNamedGroups };
+declare const processVariables: typeof TemplateEngine.processVariables, recursiveSubstitute: typeof TemplateEngine.recursiveSubstitute;
+import type { Reporters, VariationsOnly, Editions, NamesToEditions, SpecialFormats } from './types.js';
+export { escapeRegex, substituteEdition, substituteEditions, getPCREPatternFromData, convertNamedGroups, processVariables, recursiveSubstitute };
 /**
  * Builds a dictionary of variations to canonical reporters.
  *
@@ -56,20 +57,4 @@ export declare function suckOutFormats(reporters: Reporters): SpecialFormats;
  * Note that the abbreviations are sorted by start date.
  */
 export declare function namesToAbbreviations(reporters: Reporters): NamesToEditions;
-/**
- * Process contents of variables.json, in preparation for passing to recursiveSubstitute:
- *
- * - Strip keys ending in '#', which are treated as comments
- * - Flatten nested dicts, so {"page": {"": "A", "foo": "B"}} becomes {"page": "A", "page_foo": "B"}
- * - Add optional variants for each key, so {"page": "\\d+"} becomes {"page_optional": "(?:\\d+ ?)?"}
- * - Resolve nested references
- */
-export declare function processVariables(variables: Record<string, unknown>): RegexVariables;
-/**
- * Recursively substitute values in `template` from `variables`. For example:
- *     recursiveSubstitute("$a $b $c", {'a': '$b', 'b': '$c', 'c': 'foo'})
- *     "foo foo foo"
- * Infinite loops will raise an Error after maxDepth loops.
- */
-export declare function recursiveSubstitute(template: string, variables: Record<string, string>, maxDepth?: number): string;
 //# sourceMappingURL=utils.d.ts.map

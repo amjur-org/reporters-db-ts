@@ -1,8 +1,10 @@
 import unidecode from 'unidecode';
-import { PCREUtils } from '@syntropiq/xtrax';
+import { PCREUtils, TemplateEngine } from '@syntropiq/xtrax';
+// Import from xtrax instead of redefining
 const { escapeRegex, substituteEdition, substituteEditions, getPCREPatternFromData, convertNamedGroups } = PCREUtils;
+const { processVariables, recursiveSubstitute } = TemplateEngine;
 // Re-export the imported functions for use by index.ts
-export { escapeRegex, substituteEdition, substituteEditions, getPCREPatternFromData, convertNamedGroups };
+export { escapeRegex, substituteEdition, substituteEditions, getPCREPatternFromData, convertNamedGroups, processVariables, recursiveSubstitute };
 /**
  * Builds a dictionary of variations to canonical reporters.
  *
@@ -127,73 +129,5 @@ export function namesToAbbreviations(reporters) {
     }
     return sortedNames;
 }
-/**
- * Process contents of variables.json, in preparation for passing to recursiveSubstitute:
- *
- * - Strip keys ending in '#', which are treated as comments
- * - Flatten nested dicts, so {"page": {"": "A", "foo": "B"}} becomes {"page": "A", "page_foo": "B"}
- * - Add optional variants for each key, so {"page": "\\d+"} becomes {"page_optional": "(?:\\d+ ?)?"}
- * - Resolve nested references
- */
-export function processVariables(variables) {
-    // Flatten variables and remove comments
-    function flatten(d, parentKey = '') {
-        const items = {};
-        for (const [k, v] of Object.entries(d)) {
-            if (k.endsWith('#')) {
-                continue;
-            }
-            const newKey = [parentKey, k].filter(Boolean).join('_');
-            if (typeof v === 'object' && v !== null && !Array.isArray(v)) {
-                Object.assign(items, flatten(v, newKey));
-            }
-            else {
-                items[newKey] = String(v);
-            }
-        }
-        return items;
-    }
-    let processedVariables = flatten(variables);
-    // Add optional variables
-    const optionalVars = {};
-    for (const [k, v] of Object.entries(processedVariables)) {
-        optionalVars[`${k}_optional`] = `(?:${v} ?)?`;
-    }
-    processedVariables = { ...processedVariables, ...optionalVars };
-    // Resolve references safely - detect cycles and skip problematic variables
-    const resolvedVariables = {};
-    for (const [k, v] of Object.entries(processedVariables)) {
-        try {
-            resolvedVariables[k] = recursiveSubstitute(v, processedVariables);
-        }
-        catch (error) {
-            // If we hit max depth (circular reference), just use the original value
-            console.warn(`Circular reference detected for variable '${k}': ${v}`);
-            resolvedVariables[k] = v;
-        }
-    }
-    return resolvedVariables;
-}
-/**
- * Recursively substitute values in `template` from `variables`. For example:
- *     recursiveSubstitute("$a $b $c", {'a': '$b', 'b': '$c', 'c': 'foo'})
- *     "foo foo foo"
- * Infinite loops will raise an Error after maxDepth loops.
- */
-export function recursiveSubstitute(template, variables, maxDepth = 100) {
-    let oldVal = template;
-    for (let i = 0; i < maxDepth; i++) {
-        // Replace variables in the format $var or ${var}
-        const newVal = oldVal.replace(/\$\{?(\w+)\}?/g, (match, varName) => {
-            return variables[varName] || match;
-        });
-        if (newVal === oldVal) {
-            break;
-        }
-        oldVal = newVal;
-    }
-    // Don't throw error for unresolved variables - just return what we have
-    // This matches the Python behavior where unresolved variables are left as-is
-    return oldVal;
-}
+// Remove the duplicate functions - they're now imported from xtrax
 //# sourceMappingURL=utils.js.map
