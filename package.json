@@ -49,12 +49,12 @@
     "@syntropiq/libpcre-ts": "latest"
   },
   "devDependencies": {
-    "@edge-runtime/vm": "^5.0.0",
-    "@types/node": "^22.15.27",
+    "@edge-runtime/vm": "latest",
+    "@types/node": "latest",
     "@types/unidecode": "latest",
-    "ajv": "^8.17.1",
+    "ajv": "latest",
     "typescript": "latest",
-    "vitest": "^3.2.1"
+    "vitest": "latest"
   },
   "trustedDependencies": [
     "@syntropiq/xtrax"
