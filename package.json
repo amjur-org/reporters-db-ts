@@ -42,7 +42,7 @@
   "homepage": "https://github.com/amjur-org/reporters-db-ts#readme",
   "description": "TypeScript port of the Python reporters-db library for legal court reporter citations",
   "dependencies": {
-    "@syntropiq/xtrax": "latest",
+    "@syntropiq/xtrax": "github:syntropiq/xtrax",
     "unidecode": "latest"
   },
   "peerDependencies": {
